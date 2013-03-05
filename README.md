@@ -9,7 +9,7 @@ Installation
 1. Find your extensions folder by going to "Help -> Show Extensions Folder"
 2. Extract the .zip to your Brackets extension directory
 3. Start Brackets and create a jasmine test file to unit test your javascript api
-4. Select Navigate/Run Jasmine Test
+4. Select View/Run Jasmine Test
 5. The results will appear in a window below your jasmine test source code
 
 Usage
