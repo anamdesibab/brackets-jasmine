@@ -58,6 +58,8 @@ define(function (require, exports, module) {
         runner = jasmineEnv.currentRunner_;
         runner.queue = new jasmine.Queue(runner.env);
         runner.suites_ = [];
+        this.suites_ = [];
+        this.failures_ = [];
     }
     
     /*
