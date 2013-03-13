@@ -62,7 +62,7 @@
     var autotest = false;
     var useHelpers = true;
     var captureExceptions = false;
-
+    var results = [];
     var junitreport = {
         report: true,
         savePath : __dirname + "/reports/",
@@ -71,19 +71,10 @@
     };
 
     var existsSync = fs.existsSync || Path.existsSync;
-    var onComplete = function (runner, log) {
-        util.print('\n');
-        if (runner.results().failedCount === 0) {
-            exitCode = 0;
-        } else {
-            exitCode = 1;
-        }
-    };
     var regExpSpec = new RegExp(match + (matchall ? "" : "spec\\.") + "(" + extentions + ")$", 'i');
 
     var options = {
         specFolder:   specFolder,
-        onComplete:   onComplete,
         isVerbose:    isVerbose,
         showColors:   showColors,
         teamcity:     teamcity,
@@ -110,22 +101,23 @@
         var results = [];
         var parseString = require('xml2js').parseString;
         var i;
+        function parseStringDone(err,result) {
+            results[results.length] = result;
+            if (results.length === files.length) {
+                callback(results);
+            }
+        }
         for (i = 0; i < files.length; i++) {
             var file = reportdir + "/" + files[i];
             var xml = fs.readFileSync(file);
-            parseString(xml, function (err, result) {
-                results[results.length] = result;
-                if (results.length === files.length) {
-                    callback(results);
-                }
-            });
+            parseString(xml, parseStringDone);
         }
     }
 
     function runTest(file) {
-        options.specFolder = file;
         cleanResults(junitreport.savePath);
-        var results = [];
+        results=[];
+        options.specFolder = file;
         options.onComplete = function () {
             readXmlResults(junitreport.savePath, function (resultxml) {
                 var i, j;
@@ -154,6 +146,7 @@
                 domainManager.emitEvent("jasmine", "update", JSON.stringify(results));
             });
         };
+        jasmine.getEnv().currentRunner_.suites_ = [];
         jasmine.executeSpecsInFolder(options);
     }
 

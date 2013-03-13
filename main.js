@@ -30,23 +30,23 @@ define(function (require, exports, module) {
 
     var AppInit             = brackets.getModule("utils/AppInit"),
         CommandManager      = brackets.getModule("command/CommandManager"),
+        Dialogs             = brackets.getModule("widgets/Dialogs"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
         Menus               = brackets.getModule("command/Menus"),
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         NodeConnection      = brackets.getModule("utils/NodeConnection"),
-        ProjectManager      = brackets.getModule("project/ProjectManager"),
-        moduledir           = FileUtils.getNativeModuleDirectoryPath(module),
+        ProjectManager      = brackets.getModule("project/ProjectManager");
+
+    var moduledir           = FileUtils.getNativeModuleDirectoryPath(module),
         templateEntry       = new NativeFileSystem.FileEntry(moduledir + '/html/jasmineReportTemplate.html'),
-        reportEntry         = new NativeFileSystem.FileEntry(moduledir + '/reports/jasmineReport.html');
-
-    var COMMAND_ID = "BracketsJasmine.BracketsJasmine";
-    var nodeConnection = null;
-    var RUN_BUILD       = "spec_cmd";
-    var contextMenu     = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU),
-        menuItems       = [],
-        buildMenuItem   = null;
-
+        reportEntry         = new NativeFileSystem.FileEntry(moduledir + '/reports/jasmineReport.html'),
+        COMMAND_ID          = "BracketsJasmine.BracketsJasmine",
+        JASMINE_CMD         = "jasmine_cmd",
+        projectMenu         = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU),
+        menuItems           = [],
+        nodeConnection      = null,
+        buildMenuItem       = null;
 
     function chain() {
         var functions = Array.prototype.slice.call(arguments, 0);
@@ -58,7 +58,6 @@ define(function (require, exports, module) {
             });
         }
     }
-    var functions = Array.prototype.slice.call(arguments, 0);
 
     AppInit.appReady(function () {
         nodeConnection = new NodeConnection();
@@ -70,17 +69,15 @@ define(function (require, exports, module) {
             return connectionPromise;
         }
 
-        // Helper function that loads our domain into the node server
         function loadJasmineDomain() {
             var path = ExtensionUtils.getModulePath(module, "JasmineDomain");
             var loadPromise = nodeConnection.loadDomains([path], true);
-            
             loadPromise.fail(function () {
                 console.log("[brackets-jasmine] failed to load jasmine domain");
             });
-            
             return loadPromise;
         }
+
         $(nodeConnection).on("jasmine.update", function (evt, jsondata) {
             FileUtils.readAsText(templateEntry).done(function (text, timestamp) {
                 jsondata = jsondata.replace(/'/g, "");
@@ -99,6 +96,7 @@ define(function (require, exports, module) {
                 });
             });
         });
+
         chain(connect, loadJasmineDomain);
     });
 
@@ -106,27 +104,21 @@ define(function (require, exports, module) {
         var entry = ProjectManager.getSelectedItem();
         nodeConnection.domains.jasmine.runTest(entry.fullPath)
             .fail(function (err) {
-                console.error("[brackets-jasmine] error ", err);
+                console.log("[brackets-jasmine] error running file: "+entry.fullPath+" message: "+err.toString());
             });
-    }
-
-    function _removeAllContextMenuItems() {
-        $.each(menuItems, function (index, target) {
-            contextMenu.removeMenuItem(target);
-        });
     }
 
     function _isSpec(fileEntry) {
         return fileEntry && fileEntry.name.indexOf(".spec.js") >= 0;
     }
-    CommandManager.register("Run Jasmine Unit Test", RUN_BUILD, function () {
+    CommandManager.register("Run Jasmine Unit Test", JASMINE_CMD, function () {
         runJasmine();
     });
-    $(contextMenu).on("beforeContextMenuOpen", function (evt) {
+    $(projectMenu).on("beforeContextMenuOpen", function (evt) {
         var selectedEntry = ProjectManager.getSelectedItem();
-        _removeAllContextMenuItems();
+        projectMenu.removeMenuItem(JASMINE_CMD);
         if (_isSpec(selectedEntry)) {
-            contextMenu.addMenuItem(RUN_BUILD, "", Menus.LAST);
+            projectMenu.addMenuItem(JASMINE_CMD, "", Menus.LAST);
         }
     });
 });

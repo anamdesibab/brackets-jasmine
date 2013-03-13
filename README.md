@@ -18,11 +18,17 @@ Usage
 The intended use is when you are writing jasmine unit tests.  The extension
 gives you quick feedback when writing testcases.
 
+For a quick test open the samples directory in the brackets-jasmine extension directory.  Right
+click on each of the sample-fail.spec.js, sample-pass.spec.js, sample.spec.js files.  Select
+"Run Jasmine Unit Test" and you will see the jasmine test report open up in a new window. 
+
 Implementation Notes
 ============
 
 The extensions uses the node server to run jasmine-node.  The node server uses jasmine-node and 
 xml2js files unmodified.  A jasmine unit test is detected by having ".spec" in the file name.
+
+Let me know if you have any suggestions or issues.  Contact me at: dschaffe@adobe.com.
 
 Change Log
 =========
