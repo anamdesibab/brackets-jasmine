@@ -1,7 +1,7 @@
 brackets-jasmine
 ===========
 
-A jasmine extension to run any jasmine test file directly in Brackets.
+A jasmine extension to run a jasmine test file in Brackets and see the html jasmine results.
 
 Installation
 ===========
@@ -15,16 +15,16 @@ Installation
 Usage
 =====
 
-The intended use is when you are writing jasmine unit tests.  The extensions
+The intended use is when you are writing jasmine unit tests.  The extension
 gives you quick feedback when writing testcases.
 
 Implementation Notes
 ============
 
-The extensions uses the node server to run jasmine-node.  A jasmine unit test is
-detected by having ".spec" in the file name.
+The extensions uses the node server to run jasmine-node.  The node server uses jasmine-node and 
+xml2js files unmodified.  A jasmine unit test is detected by having ".spec" in the file name.
 
 Change Log
 =========
 
-03-12-2013 Initial commit
+03-13-2013 Initial commit
