@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
  * DEALINGS IN THE SOFTWARE.
  * 
- * brackets-jasmine - a jasmine brackets plugin
+ * brackets-jasmine - a brackets plugin to run jasmine unit tests
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
@@ -28,98 +28,105 @@
 define(function (require, exports, module) {
     'use strict';
 
-    var CommandManager = brackets.getModule("command/CommandManager"),
-        Menus          = brackets.getModule("command/Menus"),
-        EditorManager  = brackets.getModule("editor/EditorManager"),
-        Resizer        = brackets.getModule("utils/Resizer"),
-        NativeFileSystem = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
-        FileUtils      = brackets.getModule("file/FileUtils"),
-        ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-        COMMAND_ID = "JasmineNode.JasmineNode",
-        tmpFileCounter = 0,
-        reporterInitialized = false,
-        currentResult = '',
-        currentFile = '';
-    // load unmodified jasmine-1.3.1.js into jasmine global variable
-    require('./jasmine-node/jasmine-1.3.1');
-    //require('./jasmine-node/jasmine-html');
-    var jasmineEnv = jasmine;
-    var reporter = require('jasmine-node/reporter');
-    // TerminalReporter callback, save all results to currentResult
-    function myprinter(data) {
-        currentResult += data.replace('\n', '<br>');
+    var AppInit             = brackets.getModule("utils/AppInit"),
+        CommandManager      = brackets.getModule("command/CommandManager"),
+        ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
+        FileUtils           = brackets.getModule("file/FileUtils"),
+        Menus               = brackets.getModule("command/Menus"),
+        NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
+        NodeConnection      = brackets.getModule("utils/NodeConnection"),
+        ProjectManager      = brackets.getModule("project/ProjectManager"),
+        moduledir           = FileUtils.getNativeModuleDirectoryPath(module),
+        templateEntry       = new NativeFileSystem.FileEntry(moduledir + '/html/jasmineReportTemplate.html'),
+        reportEntry         = new NativeFileSystem.FileEntry(moduledir + '/reports/jasmineReport.html');
+
+    var COMMAND_ID = "BracketsJasmine.BracketsJasmine";
+    var nodeConnection = null;
+    var RUN_BUILD       = "spec_cmd";
+    var contextMenu     = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU),
+        menuItems       = [],
+        buildMenuItem   = null;
+
+
+    function chain() {
+        var functions = Array.prototype.slice.call(arguments, 0);
+        if (functions.length > 0) {
+            var firstFunction = functions.shift();
+            var firstPromise = firstFunction.call();
+            firstPromise.done(function () {
+                chain.apply(null, functions);
+            });
+        }
+    }
+    var functions = Array.prototype.slice.call(arguments, 0);
+
+    AppInit.appReady(function () {
+        nodeConnection = new NodeConnection();
+        function connect() {
+            var connectionPromise = nodeConnection.connect(true);
+            connectionPromise.fail(function () {
+                console.error("[brackets-jasmine] failed to connect to node");
+            });
+            return connectionPromise;
+        }
+
+        // Helper function that loads our domain into the node server
+        function loadJasmineDomain() {
+            var path = ExtensionUtils.getModulePath(module, "JasmineDomain");
+            var loadPromise = nodeConnection.loadDomains([path], true);
+            
+            loadPromise.fail(function () {
+                console.log("[brackets-jasmine] failed to load jasmine domain");
+            });
+            
+            return loadPromise;
+        }
+        $(nodeConnection).on("jasmine.update", function (evt, jsondata) {
+            FileUtils.readAsText(templateEntry).done(function (text, timestamp) {
+                jsondata = jsondata.replace(/'/g, "");
+                var data = JSON.parse(jsondata);
+                var index = text.indexOf("%jsondata%");
+                text = text.substring(0, index) + jsondata + text.substring(index + 10);
+                index = text.indexOf("%time%");
+                var totaltime = 0;
+                var i;
+                for (i = 0; i < data.length; i++) {
+                    totaltime = totaltime + parseFloat(data[i].time);
+                }
+                text = text.substring(0, index) + totaltime + text.substring(index + 6);
+                FileUtils.writeText(reportEntry, text).done(function () {
+                    window.open(reportEntry.fullPath);
+                });
+            });
+        });
+        chain(connect, loadJasmineDomain);
+    });
+
+    function runJasmine() {
+        var entry = ProjectManager.getSelectedItem();
+        nodeConnection.domains.jasmine.runTest(entry.fullPath)
+            .fail(function (err) {
+                console.error("[brackets-jasmine] error ", err);
+            });
     }
 
-    // after jasmine completes set value of currentResult to window
-    function done(runner, log) {
-        $("#stuff").empty().append(currentResult);
-        currentResult = '';
-        var jasmineEnv = jasmine.getEnv();
-        runner = jasmineEnv.currentRunner_;
-        runner.queue = new jasmine.Queue(runner.env);
-        runner.suites_ = [];
-        this.suites_ = [];
-        this.failures_ = [];
-    }
-    
-    /*
-     *  when Run Jasmine menu is selected run test
-     *  - write contents of current buffer to a temporary file
-     *    since require will not reload the file if it has been changed since
-          the last time the test was run.
-        - load the temp file using require(tmpFile)
-        - add a reporter once to collect the results
-        - call jasmine.getEnv().execute() to run the test
-        - when the test finishes running the done callback will run
-     */
-    function runJasmine() {
-        var extdir = ExtensionUtils.getModulePath(module, '');
-        var editor = EditorManager.getCurrentFullEditor();
-        if (!editor) {
-            console.log("jasmine: no window is selected");
-            return;
-        }
-        var $jasmine = $("#jasmine");
-        $jasmine.show();
-        Resizer.makeResizable($('#jasmine').get(0), "vert", "top", 150);
-        EditorManager.resizeEditor();
-        var fullpath = editor.document.file.fullPath;
-        currentFile = editor.document.file.name;
-        $("#jasminetitle").empty().append("Jasmine: " + currentFile);
-        var text = editor.document.getText();
-        var tmpFile = extdir + 'tmpfile' + tmpFileCounter;
-        tmpFileCounter += 1;
-        var tmpFileEntry = new NativeFileSystem.FileEntry(tmpFile);
-        FileUtils.writeText(tmpFileEntry, text).done(function () {
-            requirejs([tmpFile], function () {
-                var jasmineEnv = jasmine.getEnv();
-                if (reporterInitialized === false) {
-                    jasmineEnv.addReporter(new reporter.jasmineNode.TerminalVerboseReporter({print: myprinter, onComplete: done}));
-                    reporterInitialized = true;
-                }
-                jasmineEnv.execute();
-            });
-        }).fail(function (err) {
-            console.log("Error writing text: " + err.name);
+    function _removeAllContextMenuItems() {
+        $.each(menuItems, function (index, target) {
+            contextMenu.removeMenuItem(target);
         });
     }
 
-    // register the extensions and add Run Jasmine under Navigate menu
-    CommandManager.register("Run Jasmine", COMMAND_ID, runJasmine);
-    var menu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
-    menu.addMenuItem(COMMAND_ID);
-
-    //add an html window for results, hide it initially
-    var content =          '  <div id="jasmine" class="bottom-panel">'
-                         + '  <div class="toolbar simple-toolbar-layout">'
-                         + '  <div id="jasminetitle">Jasmine</div><a href="#" class="close">&times;</a>'
-                         + '  </div>'
-                         + '  <div id="stuff"/>'
-                         + '  </div>';
-    $(content).insertBefore("#status-bar");
-
-    $('#jasmine').hide();
-    $('#jasmine .close').click(function () { $('#jasmine').hide();
-        EditorManager.resizeEditor();
-         });
+    function _isSpec(fileEntry) {
+        return fileEntry && fileEntry.name.indexOf(".spec.js") >= 0;
+    }
+    CommandManager.register("Run Jasmine Unit Test", RUN_BUILD, function () {
+        runJasmine();
+    });
+    $(contextMenu).on("beforeContextMenuOpen", function (evt) {
+        var selectedEntry = ProjectManager.getSelectedItem();
+        _removeAllContextMenuItems();
+        if (_isSpec(selectedEntry)) {
+            contextMenu.addMenuItem(RUN_BUILD, "", Menus.LAST);
+        }
+    });
 });
