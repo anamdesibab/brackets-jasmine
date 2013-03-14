@@ -40,7 +40,7 @@ define(function (require, exports, module) {
 
     var moduledir           = FileUtils.getNativeModuleDirectoryPath(module),
         templateEntry       = new NativeFileSystem.FileEntry(moduledir + '/html/jasmineReportTemplate.html'),
-        reportEntry         = new NativeFileSystem.FileEntry(moduledir + '/reports/jasmineReport.html'),
+        reportEntry         = new NativeFileSystem.FileEntry(moduledir + '/node/reports/jasmineReport.html'),
         COMMAND_ID          = "BracketsJasmine.BracketsJasmine",
         JASMINE_CMD         = "jasmine_cmd",
         projectMenu         = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU),
