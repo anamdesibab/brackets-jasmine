@@ -70,7 +70,7 @@ define(function (require, exports, module) {
         }
 
         function loadJasmineDomain() {
-            var path = ExtensionUtils.getModulePath(module, "JasmineDomain");
+            var path = ExtensionUtils.getModulePath(module, "node/JasmineDomain");
             var loadPromise = nodeConnection.loadDomains([path], true);
             loadPromise.fail(function () {
                 console.log("[brackets-jasmine] failed to load jasmine domain");
