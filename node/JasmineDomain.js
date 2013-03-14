@@ -47,7 +47,7 @@
     jasmine.setInterval = jasmine.getGlobal().setInterval;
     var key;
     for (key in jasmine) {
-        if (key !== 'undefined') {
+        if (jasmine.hasOwnProperty(key) && key !== 'undefined') {
             global[key] = jasmine[key];
         }
     }
@@ -58,7 +58,7 @@
     var useRequireJs = false;
     var extentions = "js";
     var match = '.';
-    var matchall = false;
+    var matchall = true;
     var autotest = false;
     var useHelpers = true;
     var captureExceptions = false;
@@ -101,7 +101,7 @@
         var results = [];
         var parseString = require('xml2js').parseString;
         var i;
-        function parseStringDone(err,result) {
+        function parseStringDone(err, result) {
             results[results.length] = result;
             if (results.length === files.length) {
                 callback(results);
@@ -112,11 +112,14 @@
             var xml = fs.readFileSync(file);
             parseString(xml, parseStringDone);
         }
+        if (files.length === 0) {
+            domainManager.emitEvent("jasmine", "update", "Error: Jasmine test did not produce any results.  Check the test for possible errors.");
+        }
     }
 
     function runTest(file) {
         cleanResults(junitreport.savePath);
-        results=[];
+        results = [];
         options.specFolder = file;
         options.onComplete = function () {
             readXmlResults(junitreport.savePath, function (resultxml) {

@@ -1,24 +1,24 @@
 /*global global, describe, it, expect  */
-describe("Suite 1", function () {
-    it("Testcase 1", function () {
+describe("The first suite", function () {
+    it("1st testcase should be green", function () {
         expect(true).toBe(true);
     });
-    it("Testcase 2", function () {
-        expect(true).toBe(true);
-    });
-});
-describe("Suite 2", function () {
-    it("Testcase 3", function () {
+    it("2nd testcase the top should appear as (green) o o o o,(green) Passing 4 specs", function () {
         expect(true).toBe(true);
     });
 });
-describe("Suite 3", function () {
-    it("Testcase 4", function () {
+describe("The second suite", function () {
+    it("1st testcase", function () {
         expect(true).toBe(true);
     });
 });
-describe("Suite 4", function () {
-    it("Testcase 5", function () {
+describe("The third suite", function () {
+    it("2nd testcase", function () {
+        expect(true).toBe(true);
+    });
+});
+describe("The fourth suite", function () {
+    it("3rd testcase", function () {
         expect(true).toBe(true);
     });
 });

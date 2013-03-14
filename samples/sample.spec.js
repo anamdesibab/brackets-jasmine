@@ -1,3 +1,9 @@
+describe("A sample: the sample test from http://pivotal.github.com/jasmine/", function() {
+  it("The report should say: (green) 15 green circles, (green) Passing 15 specs", function() {
+    expect(true).toBe(true);
+  });
+});  
+
 describe("A suite", function() {
   it("contains spec with an expectation", function() {
     expect(true).toBe(true);
