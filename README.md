@@ -9,8 +9,9 @@ Installation
 1. Find your extensions folder by going to "Help -> Show Extensions Folder"
 2. Extract the .zip to your Brackets extension directory
 3. Start Brackets and create a jasmine test file to unit test your javascript api
-4. Right click on the jasmine file (with .spec in the filename), select Run Jasmine Unit Test
-5. The results will appear in new window
+4. Right click on the jasmine file (a jasmine file is either in a spec/ directory or ends with .spec.js)
+5. Select Run Jasmine Unit Test from the context menu
+6. The results will appear in new window
 
 Usage
 =====
@@ -26,7 +27,8 @@ Implementation Notes
 ============
 
 The extensions uses the node server to run jasmine-node.  The node server uses jasmine-node and 
-xml2js files unmodified.  A jasmine unit test is detected by having ".spec" in the file name.
+xml2js files unmodified.  A jasmine unit test is detected by ending with ".spec.js" in the file
+name or is in specs/ directory.
 
 Let me know if you have any suggestions or issues.  Contact me at: dschaffe@adobe.com.
 

@@ -109,7 +109,8 @@ define(function (require, exports, module) {
     }
 
     function _isSpec(fileEntry) {
-        return fileEntry && fileEntry.name.indexOf(".spec.js") >= 0;
+        return fileEntry && (fileEntry.name.indexOf(".spec.js") == fileEntry.name.length-8 || 
+                             (fileEntry.fullPath.indexOf("/spec/") >=0 && fileEntry.name.indexOf(".js") == fileEntry.name.length-3 ));
     }
     CommandManager.register("Run Jasmine Unit Test", JASMINE_CMD, function () {
         runJasmine();
