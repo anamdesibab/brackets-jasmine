@@ -125,9 +125,11 @@ define(function (require, exports, module) {
 
     function determineFileType(fileEntry) {
         if (fileEntry) {
-            if (fileEntry.name.indexOf(".spec.js") === fileEntry.name.length - 8) {
+            if (fileEntry.name.indexOf("spec.js") === fileEntry.name.length - 7 ||
+                fileEntry.name.indexOf("Spec.js") === fileEntry.name.length - 7) {
                 return "jasmine";
             }
+
             if ((fileEntry.fullPath.indexOf("/spec/") >= 0 || fileEntry.fullPath.indexOf("/specs/") >= 0) &&
                     fileEntry.name.indexOf(".js") === fileEntry.name.length - 3) {
                 return "jasmine";
