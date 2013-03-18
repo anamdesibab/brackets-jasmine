@@ -111,8 +111,12 @@ define(function (require, exports, module) {
     });
 
     function runJasmine() {
-        var entry = DocumentManager.getCurrentDocument().file;
-        nodeConnection.domains.jasmine.runTest(entry.fullPath)
+        var entry = ProjectManager.getSelectedItem();
+        if (entry == null) {
+            entry = DocumentManager.getCurrentDocument().file;
+        }
+        var path = entry.fullPath;
+        nodeConnection.domains.jasmine.runTest(path)
             .fail(function (err) {
                 console.log("[brackets-jasmine] error running file: " + entry.fullPath + " message: " + err.toString());
                 var dlg = Dialogs.showModalDialog(
@@ -124,26 +128,19 @@ define(function (require, exports, module) {
     }
 
     function determineFileType(fileEntry) {
-        if (fileEntry) {
-            if (fileEntry.name.indexOf("spec.js") === fileEntry.name.length - 7 ||
-                fileEntry.name.indexOf("Spec.js") === fileEntry.name.length - 7) {
-                return "jasmine";
-            }
-
-            if ((fileEntry.fullPath.indexOf("/spec/") >= 0 || fileEntry.fullPath.indexOf("/specs/") >= 0) &&
-                    fileEntry.name.indexOf(".js") === fileEntry.name.length - 3) {
-                return "jasmine";
-            }
+        var pattern=new RegExp('(spec.js$|\/(spec|specs)\/)','i');
+        if (fileEntry && fileEntry.fullPath.match(pattern,'i')!=null) {
+            return "jasmine";
         } else {
             return "unknown";
         }
     }
-    CommandManager.register("Run Jasmine Unit Test", JASMINE_CMD, function () {
+    CommandManager.register("Run Jasmine Test", JASMINE_CMD, function () {
         runJasmine();
     });
     
     $(projectMenu).on("beforeContextMenuOpen", function (evt) {
-        var selectedEntry = DocumentManager.getCurrentDocument().file;
+        var selectedEntry = ProjectManager.getSelectedItem();
         projectMenu.removeMenuItem(JASMINE_CMD);
         if (determineFileType(selectedEntry) === "jasmine") {
             projectMenu.addMenuItem(JASMINE_CMD, "", Menus.LAST);

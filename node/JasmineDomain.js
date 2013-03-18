@@ -82,7 +82,44 @@
         regExpSpec:   regExpSpec,
         junitreport:  junitreport
     };
+    options.onComplete = function () {
+        readXmlResults(junitreport.savePath, function (resultxml) {
+            var i, j;
+            results = [];
+            for (i = 0; i < resultxml.length; i++) {
+                if (resultxml==undefined || resultxml[i] == undefined ) {
+                    continue;
+                }
+                var result = {};
+                result.path = options.specFolder;
+                result.title = result.path;
+                if (result.title[result.title.length-1] == '/') {
+                    result.title = result.title.substring(0,result.title.length - 1);
+                }
+                result.title = result.title.substring(result.title.lastIndexOf('/') + 1);
+                result.name = resultxml[i].testsuites.testsuite[0].$.name;
+                result.errors = resultxml[i].testsuites.testsuite[0].$.errors;
+                result.failures = resultxml[i].testsuites.testsuite[0].$.failures;
+                result.time = resultxml[i].testsuites.testsuite[0].$.time;
+                result.timestamp = resultxml[i].testsuites.testsuite[0].$.timestamp;
+                result.testcases = [];
+                var testcases = resultxml[i].testsuites.testsuite[0].testcase;
+                for (j = 0; j < testcases.length; j++) {
+                    var currenttestcase = testcases[j];
+                    result.testcases[j] = {};
+                    result.testcases[j].name = currenttestcase.$.name;
+                    result.testcases[j].time = currenttestcase.$.time;
+                    if (currenttestcase.hasOwnProperty('failure')) {
+                        result.testcases[j].failure = currenttestcase.failure[0];
+                    }
+                }
+                results[results.length] = result;
+            }
+            domainManager.emitEvent("jasmine", "update", JSON.stringify(results));
+        });
+    };
 
+    
     function cleanResults(reportdir) {
         if (fs.existsSync(reportdir)) {
             var files = fs.readdirSync(reportdir);
@@ -117,39 +154,12 @@
         }
     }
 
-    function runTest(file) {
+    function runTest(path) {
         cleanResults(junitreport.savePath);
         results = [];
-        options.specFolder = file;
-        options.onComplete = function () {
-            readXmlResults(junitreport.savePath, function (resultxml) {
-                var i, j;
-                for (i = 0; i < resultxml.length; i++) {
-                    var result = {};
-                    result.filepath = file;
-                    result.file = file.substring(file.lastIndexOf("/") + 1);
-                    result.name = resultxml[i].testsuites.testsuite[0].$.name;
-                    result.errors = resultxml[i].testsuites.testsuite[0].$.errors;
-                    result.failures = resultxml[i].testsuites.testsuite[0].$.failures;
-                    result.time = resultxml[i].testsuites.testsuite[0].$.time;
-                    result.timestamp = resultxml[i].testsuites.testsuite[0].$.timestamp;
-                    result.testcases = [];
-                    var testcases = resultxml[i].testsuites.testsuite[0].testcase;
-                    for (j = 0; j < testcases.length; j++) {
-                        var currenttestcase = testcases[j];
-                        result.testcases[j] = {};
-                        result.testcases[j].name = currenttestcase.$.name;
-                        result.testcases[j].time = currenttestcase.$.time;
-                        if (currenttestcase.hasOwnProperty('failure')) {
-                            result.testcases[j].failure = currenttestcase.failure[0];
-                        }
-                    }
-                    results[i] = result;
-                }
-                domainManager.emitEvent("jasmine", "update", JSON.stringify(results));
-            });
-        };
+        options.specFolder = path;
         jasmine.getEnv().currentRunner_.suites_ = [];
+        jasmine.getEnv().reporter.subReporters_ = [];
         jasmine.executeSpecsInFolder(options);
     }
 
