@@ -112,7 +112,7 @@ define(function (require, exports, module) {
 
     function runJasmine() {
         var entry = ProjectManager.getSelectedItem();
-        if (entry == null) {
+        if (entry === null) {
             entry = DocumentManager.getCurrentDocument().file;
         }
         var path = entry.fullPath;
@@ -128,8 +128,8 @@ define(function (require, exports, module) {
     }
 
     function determineFileType(fileEntry) {
-        var pattern=new RegExp('(spec.js$|\/(spec|specs)\/)','i');
-        if (fileEntry && fileEntry.fullPath.match(pattern,'i')!=null) {
+        var pattern = new RegExp('(spec.js$|\/(spec|specs)\/)', 'i');
+        if (fileEntry && fileEntry.fullPath.match(pattern, 'i') !== null) {
             return "jasmine";
         } else {
             return "unknown";
